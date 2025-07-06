@@ -7,7 +7,7 @@ This package provides comprehensive configuration management for the application
 including database, cache, security, API, services, and logging configurations.
 """
 
-from .settings import Config, DevelopmentConfig, ProductionConfig, TestingConfig
+from .settings import BaseConfig, DevelopmentConfig, ProductionConfig, TestingConfig, get_config
 from .database import (
     init_db, get_db, create_tables, drop_tables, migrate_database,
     seed_database, check_database_connection, get_database_info
@@ -18,15 +18,16 @@ from .api_config import APIConfig
 from .services import ServicesManager, services, get_service_config, is_service_enabled
 from .celery_config import make_celery, get_task_queues, get_task_routes
 from .logging_config import LoggingConfig, logging_config, setup_logging, get_logger
-from .middleware import register_middleware
-from .error_handlers import register_error_handlers
+# from .middleware import register_middleware
+# from .error_handlers import register_error_handlers
 
 __all__ = [
     # Core configuration classes
-    'Config',
+    'BaseConfig',
     'DevelopmentConfig', 
     'ProductionConfig',
     'TestingConfig',
+    'get_config',
     
     # Database
     'init_db',
@@ -67,8 +68,8 @@ __all__ = [
     'get_logger',
     
     # Middleware and error handling
-    'register_middleware',
-    'register_error_handlers'
+    # 'register_middleware',
+    # 'register_error_handlers'
 ]
 
 
@@ -109,10 +110,10 @@ def init_app_config(app, config_name=None):
     setup_logging(app)
     
     # Register middleware
-    register_middleware(app)
+    # register_middleware(app)
     
     # Register error handlers
-    register_error_handlers(app)
+    # register_error_handlers(app)
     
     return app
 

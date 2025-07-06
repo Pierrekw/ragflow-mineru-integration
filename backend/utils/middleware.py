@@ -124,8 +124,10 @@ def register_request_hooks(app):
         """Clean up after request."""
         # Clean up database session
         try:
-            from backend.database import db
-            db.session.remove()
+            from backend.config.database import get_db
+            db = get_db()
+            if hasattr(db, 'close'):
+                db.close()
         except Exception:
             pass
         

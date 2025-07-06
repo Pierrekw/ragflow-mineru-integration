@@ -17,8 +17,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from backend.app import create_app
-from backend.config.database import init_db
-from backend.database import db
+from backend.config.database import init_db, get_db
 
 
 def setup_environment():
@@ -42,24 +41,31 @@ def init_database_tables(app):
     """Initialize database tables and default data."""
     with app.app_context():
         try:
-            # Create all tables
-            db.create_all()
-            print("✓ Database tables created successfully")
+            # Get database instance
+            db = get_db()
             
             # Import models to ensure they're registered
             from backend.models.user import User
-            from backend.models.role import Role
-            from backend.models.permission import Permission
             from backend.models.document import Document
             from backend.models.task import Task
+            from backend.models.permission import Permission
+            
+            # Create all tables
+            from backend.config.database import create_tables
+            create_tables()
+            print("✓ Database tables created successfully")
             
             # Check if we need to create default data
-            if Role.query.count() == 0:
-                print("Creating default roles and permissions...")
-                create_default_data()
-                print("✓ Default data created successfully")
-            else:
-                print("✓ Database already initialized")
+            try:
+                user_count = User.select().count()
+                if user_count == 0:
+                    print("Creating default admin user...")
+                    create_default_data()
+                    print("✓ Default data created successfully")
+                else:
+                    print("✓ Database already initialized")
+            except Exception as e:
+                print(f"Warning: Could not check existing data: {e}")
                 
         except Exception as e:
             print(f"✗ Database initialization failed: {e}")
@@ -68,74 +74,27 @@ def init_database_tables(app):
 
 
 def create_default_data():
-    """Create default roles, permissions, and admin user."""
-    from backend.models.user import User, AccessLevel
-    from backend.models.role import Role
-    from backend.models.permission import Permission, PermissionType
-    
-    # Create default permissions
-    default_permissions = [
-        ('auth.login', 'Login', 'User can login to the system', PermissionType.SYSTEM),
-        ('auth.logout', 'Logout', 'User can logout from the system', PermissionType.SYSTEM),
-        ('document.read', 'Read Documents', 'User can read documents', PermissionType.RESOURCE),
-        ('document.create', 'Create Documents', 'User can create documents', PermissionType.RESOURCE),
-        ('document.update', 'Update Documents', 'User can update documents', PermissionType.RESOURCE),
-        ('document.delete', 'Delete Documents', 'User can delete documents', PermissionType.RESOURCE),
-        ('system.admin', 'System Administration', 'Full system administration access', PermissionType.ADMIN),
-    ]
-    
-    permissions = {}
-    for name, display_name, description, perm_type in default_permissions:
-        permission = Permission(
-            name=name,
-            display_name=display_name,
-            description=description,
-            permission_type=perm_type,
-            is_system=True
-        )
-        db.session.add(permission)
-        permissions[name] = permission
-    
-    # Create default roles
-    admin_role = Role(
-        name='admin',
-        display_name='Administrator',
-        description='System administrator with full access',
-        access_level=AccessLevel.ADMIN,
-        is_system=True
-    )
-    
-    user_role = Role(
-        name='user',
-        display_name='User',
-        description='Regular user with basic document access',
-        access_level=AccessLevel.USER,
-        is_system=True,
-        is_default=True
-    )
-    
-    db.session.add(admin_role)
-    db.session.add(user_role)
-    db.session.flush()  # Get role IDs
+    """Create default admin user."""
+    from backend.models.user import User
     
     # Create default admin user
     admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
     admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123456')
     
-    admin_user = User(
-        username='admin',
-        email=admin_email,
-        first_name='System',
-        last_name='Administrator',
-        is_active=True,
-        is_verified=True,
-        role_id=admin_role.id
-    )
-    admin_user.set_password(admin_password)
-    db.session.add(admin_user)
-    
-    db.session.commit()
-    print(f"✓ Default admin user created: {admin_email} / {admin_password}")
+    try:
+        admin_user = User.create(
+            username='admin',
+            email=admin_email,
+            first_name='System',
+            last_name='Administrator',
+            is_active=True,
+            is_verified=True
+        )
+        admin_user.set_password(admin_password)
+        admin_user.save()
+        print(f"✓ Default admin user created: {admin_email} / {admin_password}")
+    except Exception as e:
+        print(f"Warning: Could not create admin user: {e}")
 
 
 def check_dependencies():

@@ -13,7 +13,7 @@ from flask import jsonify, request, current_app
 from werkzeug.exceptions import HTTPException
 from marshmallow import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from jwt.exceptions import JWTError
+from jwt.exceptions import PyJWTError as JWTError
 
 from backend.utils.logging_config import log_security_event
 
@@ -148,8 +148,10 @@ def register_error_handlers(app):
         
         # Rollback database session if exists
         try:
-            from backend.database import db
-            db.session.rollback()
+            from backend.config.database import get_db
+            db = get_db()
+            if hasattr(db, 'rollback'):
+                db.rollback()
         except Exception:
             pass
         
@@ -192,8 +194,10 @@ def register_error_handlers(app):
         
         # Rollback database session
         try:
-            from backend.database import db
-            db.session.rollback()
+            from backend.config.database import get_db
+            db = get_db()
+            if hasattr(db, 'rollback'):
+                db.rollback()
         except Exception:
             pass
         
@@ -235,8 +239,10 @@ def register_error_handlers(app):
         
         # Rollback database session if exists
         try:
-            from backend.database import db
-            db.session.rollback()
+            from backend.config.database import get_db
+            db = get_db()
+            if hasattr(db, 'rollback'):
+                db.rollback()
         except Exception:
             pass
         

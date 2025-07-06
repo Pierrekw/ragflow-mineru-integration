@@ -63,7 +63,7 @@ class BaseModel(Model):
     updated_at = DateTimeField(default=datetime.now, index=True)
     
     class Meta:
-        database = get_db()
+        database = None  # Will be set during app initialization
     
     def save(self, *args, **kwargs):
         """Override save to update the updated_at field."""
@@ -327,7 +327,7 @@ class SoftDeleteModel(BaseModel):
     deleted_at = DateTimeField(null=True, index=True)
     
     class Meta:
-        database = get_db()
+        database = None  # Will be set during app initialization
     
     def delete_instance(self, permanently: bool = False, *args, **kwargs):
         """

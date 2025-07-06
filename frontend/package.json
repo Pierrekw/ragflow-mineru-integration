@@ -1,0 +1,101 @@
+{
+  "name": "ragflow-mineru-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Ragflow-MinerU Integration Project",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.20.1",
+    "antd": "^5.15.0",
+    "@ant-design/icons": "^5.3.0",
+    "@ant-design/pro-components": "^2.7.0",
+    "@reduxjs/toolkit": "^2.1.0",
+    "react-redux": "^9.1.0",
+    "axios": "^1.6.8",
+    "socket.io-client": "^4.7.5",
+    "echarts": "^5.5.0",
+    "dayjs": "^1.11.10",
+    "lodash-es": "^4.17.21",
+    "classnames": "^2.5.1",
+    "@tanstack/react-query": "^5.20.0",
+    "ahooks": "^3.8.0",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
+    "redux-persist": "^6.0.0",
+    "@types/lodash-es": "^4.17.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@types/react-syntax-highlighter": "^15.5.11",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.6",
+    "vitest": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "prettier": "^3.2.5",
+    "jsdom": "^24.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "keywords": [
+    "ragflow",
+    "mineru",
+    "rag",
+    "document-processing",
+    "knowledge-base",
+    "ai",
+    "react",
+    "typescript",
+    "antd"
+  ],
+  "author": "RAGFlow Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/ragflow-mineru-integration.git",
+    "directory": "frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/ragflow-mineru-integration/issues"
+  },
+  "homepage": "https://github.com/your-org/ragflow-mineru-integration#readme"
+}

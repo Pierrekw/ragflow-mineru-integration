@@ -37,16 +37,16 @@ class RegisterSchema(Schema):
     username = fields.Str(required=True, validate=lambda x: len(x) >= 3 and len(x) <= 50)
     email = fields.Email(required=True)
     password = fields.Str(required=True, validate=lambda x: len(x) >= 8)
-    first_name = fields.Str(missing=None, validate=lambda x: len(x) <= 50 if x else True)
-    last_name = fields.Str(missing=None, validate=lambda x: len(x) <= 50 if x else True)
-    role_name = fields.Str(missing='user')
+    first_name = fields.Str(allow_none=True, validate=lambda x: len(x) <= 50 if x else True)
+    last_name = fields.Str(allow_none=True, validate=lambda x: len(x) <= 50 if x else True)
+    role_name = fields.Str(load_default='user')
 
 
 class LoginSchema(Schema):
     """User login validation schema."""
     identifier = fields.Str(required=True)  # username or email
     password = fields.Str(required=True)
-    remember_me = fields.Bool(missing=False)
+    remember_me = fields.Bool(load_default=False)
 
 
 class ChangePasswordSchema(Schema):

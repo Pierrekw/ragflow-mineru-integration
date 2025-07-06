@@ -76,7 +76,7 @@ def create_database_connection(config: BaseConfig) -> Database:
         raise ValueError(f"Unsupported database type: {config.DB_TYPE}")
 
 
-def init_db(app: Flask) -> None:
+def init_db(app):
     """
     Initialize database connection and register teardown handlers.
     
@@ -85,13 +85,20 @@ def init_db(app: Flask) -> None:
     """
     global db
     
-    config = app.config
+    # Get the configuration object from app.config
+    from backend.config.settings import get_config
+    config_name = app.config.get('ENVIRONMENT', 'development')
+    config = get_config(config_name)
     
     # Create database connection
     db = create_database_connection(config)
     
     # Store database instance in app config
     app.config['DATABASE'] = db
+    
+    # Set database for all models within app context
+    with app.app_context():
+        set_models_database(db)
     
     # Register request handlers
     @app.before_request
@@ -125,6 +132,33 @@ def get_db() -> Database:
     return db
 
 
+def set_models_database(database: Database) -> None:
+    """
+    Set database for all model classes.
+    
+    Args:
+        database: Database instance to set
+    """
+    from backend.models.base import BaseModel, SoftDeleteModel
+    from backend.models.user import User, UserRole, UserSession
+    from backend.models.document import Document, DocumentVersion, DocumentShare
+    from backend.models.task import Task
+    from backend.models.permission import Permission, RolePermission, UserPermission, AccessLog
+    
+    models = [
+        BaseModel, SoftDeleteModel,
+        User, UserRole, UserSession,
+        Document, DocumentVersion, DocumentShare,
+        Task,
+        Permission, RolePermission, UserPermission, AccessLog
+    ]
+    
+    for model in models:
+        model._meta.database = database
+    
+    logger.info(f"Set database for {len(models)} model classes")
+
+
 def create_tables() -> None:
     """
     Create all database tables.
@@ -141,17 +175,11 @@ def create_tables() -> None:
         # User models
         User, UserRole, UserSession,
         # Document models
-        Document, DocumentChunk, DocumentVersion,
-        # Knowledgebase models
-        Knowledgebase, KnowledgebaseDocument,
+        Document, DocumentVersion, DocumentShare,
         # Task models
-        ParseTask, TaskLog,
+        Task,
         # Permission models
-        UserKnowledgebasePermission, RolePermission,
-        # File models
-        File, FileMetadata,
-        # Audit models
-        AuditLog
+        Permission, RolePermission, UserPermission, AccessLog
     ]
     
     db.create_tables(models, safe=True)
@@ -172,12 +200,9 @@ def drop_tables() -> None:
     
     models = [
         # Reverse order for foreign key constraints
-        AuditLog,
-        FileMetadata, File,
-        RolePermission, UserKnowledgebasePermission,
-        TaskLog, ParseTask,
-        KnowledgebaseDocument, Knowledgebase,
-        DocumentVersion, DocumentChunk, Document,
+        AccessLog, UserPermission, RolePermission, Permission,
+        Task,
+        DocumentShare, DocumentVersion, Document,
         UserSession, UserRole, User
     ]
     

@@ -20,12 +20,10 @@ from backend.utils.error_handlers import register_error_handlers
 from backend.utils.middleware import register_middleware
 
 # Import blueprints
-from backend.api.auth.views import auth_bp
-from backend.api.users.views import users_bp
-from backend.api.documents.views import documents_bp
-from backend.api.mineru.views import mineru_bp
-from backend.api.permissions.views import permissions_bp
-from backend.api.health.views import health_bp
+from backend.api.auth import auth_bp
+from backend.api.documents import documents_bp
+from backend.api.permissions import permissions_bp
+from backend.api.tasks import tasks_bp
 
 
 def create_app(config_name=None):
@@ -143,12 +141,10 @@ def register_blueprints(app):
     api_prefix = app.config.get('API_PREFIX', '/api/v1')
     
     # Register API blueprints
-    app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix=api_prefix)
-    app.register_blueprint(users_bp, url_prefix=api_prefix)
     app.register_blueprint(documents_bp, url_prefix=api_prefix)
-    app.register_blueprint(mineru_bp, url_prefix=api_prefix)
     app.register_blueprint(permissions_bp, url_prefix=api_prefix)
+    app.register_blueprint(tasks_bp, url_prefix=api_prefix)
     
     # Log registered routes in development
     if app.config.get('DEBUG'):

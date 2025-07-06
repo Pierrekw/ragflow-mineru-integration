@@ -21,7 +21,7 @@ from backend.services.auth_service import AuthService
 from backend.services.permission_service import PermissionService
 from backend.models.document import Document, DocumentType, ProcessingStatus
 from backend.models.user import User
-from backend.api import HTTP_STATUS, RESPONSE_MESSAGES, FILE_UPLOAD
+from backend.api import HTTP_STATUS, RESPONSE_MESSAGES, UPLOAD_SETTINGS
 from backend.api.auth import require_permission
 
 
@@ -38,45 +38,45 @@ permission_service = PermissionService()
 # Validation schemas
 class DocumentUploadSchema(Schema):
     """Document upload validation schema."""
-    title = fields.Str(missing=None, validate=lambda x: len(x) <= 255 if x else True)
-    description = fields.Str(missing=None, validate=lambda x: len(x) <= 1000 if x else True)
-    document_type = fields.Str(missing='auto', validate=lambda x: x in [t.value for t in DocumentType])
-    is_public = fields.Bool(missing=False)
-    tags = fields.List(fields.Str(), missing=[])
-    processing_config = fields.Dict(missing={})
+    title = fields.Str(allow_none=True, validate=lambda x: len(x) <= 255 if x else True)
+    description = fields.Str(allow_none=True, validate=lambda x: len(x) <= 1000 if x else True)
+    document_type = fields.Str(load_default='auto', validate=lambda x: x in [t.value for t in DocumentType])
+    is_public = fields.Bool(load_default=False)
+    tags = fields.List(fields.Str(), load_default=[])
+    processing_config = fields.Dict(load_default={})
 
 
 class DocumentSearchSchema(Schema):
     """Document search validation schema."""
-    query = fields.Str(missing=None)
-    document_type = fields.Str(missing=None, validate=lambda x: x in [t.value for t in DocumentType] if x else True)
-    status = fields.Str(missing=None, validate=lambda x: x in [s.value for s in ProcessingStatus] if x else True)
-    tags = fields.List(fields.Str(), missing=[])
-    owner_id = fields.Str(missing=None)
-    is_public = fields.Bool(missing=None)
-    created_after = fields.DateTime(missing=None)
-    created_before = fields.DateTime(missing=None)
-    page = fields.Int(missing=1, validate=lambda x: x > 0)
-    per_page = fields.Int(missing=20, validate=lambda x: 1 <= x <= 100)
-    sort_by = fields.Str(missing='created_at', validate=lambda x: x in ['created_at', 'updated_at', 'title', 'file_size'])
-    sort_order = fields.Str(missing='desc', validate=lambda x: x in ['asc', 'desc'])
+    query = fields.Str(allow_none=True)
+    document_type = fields.Str(allow_none=True, validate=lambda x: x in [t.value for t in DocumentType] if x else True)
+    status = fields.Str(allow_none=True, validate=lambda x: x in [s.value for s in ProcessingStatus] if x else True)
+    tags = fields.List(fields.Str(), load_default=[])
+    owner_id = fields.Str(allow_none=True)
+    is_public = fields.Bool(allow_none=True)
+    created_after = fields.DateTime(allow_none=True)
+    created_before = fields.DateTime(allow_none=True)
+    page = fields.Int(load_default=1, validate=lambda x: x > 0)
+    per_page = fields.Int(load_default=20, validate=lambda x: 1 <= x <= 100)
+    sort_by = fields.Str(load_default='created_at', validate=lambda x: x in ['created_at', 'updated_at', 'title', 'file_size'])
+    sort_order = fields.Str(load_default='desc', validate=lambda x: x in ['asc', 'desc'])
 
 
 class DocumentUpdateSchema(Schema):
     """Document update validation schema."""
-    title = fields.Str(missing=None, validate=lambda x: len(x) <= 255 if x else True)
-    description = fields.Str(missing=None, validate=lambda x: len(x) <= 1000 if x else True)
-    is_public = fields.Bool(missing=None)
-    tags = fields.List(fields.Str(), missing=None)
+    title = fields.Str(allow_none=True, validate=lambda x: len(x) <= 255 if x else True)
+    description = fields.Str(allow_none=True, validate=lambda x: len(x) <= 1000 if x else True)
+    is_public = fields.Bool(allow_none=True)
+    tags = fields.List(fields.Str(), allow_none=True)
 
 
 class DocumentShareSchema(Schema):
     """Document share validation schema."""
     share_with = fields.Str(required=True)  # user_id or email
     permission_level = fields.Str(required=True, validate=lambda x: x in ['read', 'write', 'admin'])
-    expires_at = fields.DateTime(missing=None)
-    password = fields.Str(missing=None)
-    max_downloads = fields.Int(missing=None, validate=lambda x: x > 0 if x else True)
+    expires_at = fields.DateTime(allow_none=True)
+    password = fields.Str(allow_none=True)
+    max_downloads = fields.Int(allow_none=True, validate=lambda x: x > 0 if x else True)
 
 
 # Utility functions
@@ -118,10 +118,10 @@ def validate_file_upload(f):
         
         # Check file size
         if hasattr(file, 'content_length') and file.content_length:
-            if file.content_length > FILE_UPLOAD['MAX_FILE_SIZE']:
+            if file.content_length > UPLOAD_SETTINGS['max_file_size']:
                 return {
                     'success': False,
-                    'message': f'File too large. Maximum size: {FILE_UPLOAD["MAX_FILE_SIZE"] // (1024*1024)}MB'
+                    'message': f'File too large. Maximum size: {UPLOAD_SETTINGS["max_file_size"] // (1024*1024)}MB'
                 }, HTTP_STATUS['BAD_REQUEST']
         
         # Check file extension
@@ -133,10 +133,10 @@ def validate_file_upload(f):
             }, HTTP_STATUS['BAD_REQUEST']
         
         ext = filename.rsplit('.', 1)[1].lower()
-        if ext not in FILE_UPLOAD['ALLOWED_EXTENSIONS']:
+        if ext not in UPLOAD_SETTINGS['allowed_extensions']:
             return {
                 'success': False,
-                'message': f'File type not allowed. Allowed types: {", ".join(FILE_UPLOAD["ALLOWED_EXTENSIONS"])}'
+                'message': f'File type not allowed. Allowed types: {", ".join(UPLOAD_SETTINGS["allowed_extensions"])}'
             }, HTTP_STATUS['BAD_REQUEST']
         
         return f(file, *args, **kwargs)

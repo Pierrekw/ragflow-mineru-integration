@@ -36,66 +36,66 @@ class PermissionCreateSchema(Schema):
     """Permission creation validation schema."""
     name = fields.Str(required=True, validate=lambda x: len(x) <= 100)
     display_name = fields.Str(required=True, validate=lambda x: len(x) <= 255)
-    description = fields.Str(missing=None, validate=lambda x: len(x) <= 1000 if x else True)
+    description = fields.Str(allow_none=True, validate=lambda x: len(x) <= 1000 if x else True)
     permission_type = fields.Str(required=True, validate=lambda x: x in [t.value for t in PermissionType])
-    category = fields.Str(missing='general', validate=lambda x: len(x) <= 50)
-    parent_id = fields.Str(missing=None)
-    is_system = fields.Bool(missing=False)
-    requires_approval = fields.Bool(missing=False)
-    is_dangerous = fields.Bool(missing=False)
-    resource_pattern = fields.Str(missing=None)
-    conditions = fields.Dict(missing={})
-    tags = fields.List(fields.Str(), missing=[])
-    metadata = fields.Dict(missing={})
+    category = fields.Str(load_default='general', validate=lambda x: len(x) <= 50)
+    parent_id = fields.Str(allow_none=True)
+    is_system = fields.Bool(load_default=False)
+    requires_approval = fields.Bool(load_default=False)
+    is_dangerous = fields.Bool(load_default=False)
+    resource_pattern = fields.Str(allow_none=True)
+    conditions = fields.Dict(load_default={})
+    tags = fields.List(fields.Str(), load_default=[])
+    metadata = fields.Dict(load_default={})
 
 
 class RoleCreateSchema(Schema):
     """Role creation validation schema."""
     name = fields.Str(required=True, validate=lambda x: len(x) <= 100)
     display_name = fields.Str(required=True, validate=lambda x: len(x) <= 255)
-    description = fields.Str(missing=None, validate=lambda x: len(x) <= 1000 if x else True)
-    is_system = fields.Bool(missing=False)
-    is_default = fields.Bool(missing=False)
-    access_level = fields.Str(missing='user', validate=lambda x: x in [l.value for l in AccessLevel])
-    permissions = fields.List(fields.Str(), missing=[])
-    tags = fields.List(fields.Str(), missing=[])
-    metadata = fields.Dict(missing={})
+    description = fields.Str(allow_none=True, validate=lambda x: len(x) <= 1000 if x else True)
+    is_system = fields.Bool(load_default=False)
+    is_default = fields.Bool(load_default=False)
+    access_level = fields.Str(load_default='user', validate=lambda x: x in [l.value for l in AccessLevel])
+    permissions = fields.List(fields.Str(), load_default=[])
+    tags = fields.List(fields.Str(), load_default=[])
+    metadata = fields.Dict(load_default={})
 
 
 class PermissionGrantSchema(Schema):
     """Permission grant validation schema."""
-    user_id = fields.Str(missing=None)
-    role_id = fields.Str(missing=None)
+    user_id = fields.Str(allow_none=True)
+    role_id = fields.Str(allow_none=True)
     permission_id = fields.Str(required=True)
-    resource_type = fields.Str(missing=None)
-    resource_id = fields.Str(missing=None)
-    conditions = fields.Dict(missing={})
-    expires_at = fields.DateTime(missing=None)
-    reason = fields.Str(missing=None, validate=lambda x: len(x) <= 500 if x else True)
+    resource_type = fields.Str(allow_none=True)
+    resource_id = fields.Str(allow_none=True)
+    conditions = fields.Dict(load_default={})
+    expires_at = fields.DateTime(allow_none=True)
+    reason = fields.Str(allow_none=True, validate=lambda x: len(x) <= 500 if x else True)
 
 
 class RoleAssignSchema(Schema):
     """Role assignment validation schema."""
     user_id = fields.Str(required=True)
     role_id = fields.Str(required=True)
-    expires_at = fields.DateTime(missing=None)
-    reason = fields.Str(missing=None, validate=lambda x: len(x) <= 500 if x else True)
+    expires_at = fields.DateTime(allow_none=True)
+    reason = fields.Str(allow_none=True, validate=lambda x: len(x) <= 500 if x else True)
 
 
 class AccessLogSearchSchema(Schema):
     """Access log search validation schema."""
-    user_id = fields.Str(missing=None)
-    permission_name = fields.Str(missing=None)
-    resource_type = fields.Str(missing=None)
-    resource_id = fields.Str(missing=None)
-    access_result = fields.Str(missing=None, validate=lambda x: x in ['granted', 'denied'] if x else True)
-    ip_address = fields.Str(missing=None)
-    created_after = fields.DateTime(missing=None)
-    created_before = fields.DateTime(missing=None)
-    page = fields.Int(missing=1, validate=lambda x: x > 0)
-    per_page = fields.Int(missing=20, validate=lambda x: 1 <= x <= 100)
-    sort_by = fields.Str(missing='created_at', validate=lambda x: x in ['created_at', 'user_id', 'permission_name'])
-    sort_order = fields.Str(missing='desc', validate=lambda x: x in ['asc', 'desc'])
+    user_id = fields.Str(allow_none=True)
+    permission_name = fields.Str(allow_none=True)
+    resource_type = fields.Str(allow_none=True)
+    resource_id = fields.Str(allow_none=True)
+    access_result = fields.Str(allow_none=True, validate=lambda x: x in ['granted', 'denied'] if x else True)
+    ip_address = fields.Str(allow_none=True)
+    created_after = fields.DateTime(allow_none=True)
+    created_before = fields.DateTime(allow_none=True)
+    page = fields.Int(load_default=1, validate=lambda x: x > 0)
+    per_page = fields.Int(load_default=20, validate=lambda x: 1 <= x <= 100)
+    sort_by = fields.Str(load_default='created_at', validate=lambda x: x in ['created_at', 'user_id', 'permission_name'])
+    sort_order = fields.Str(load_default='desc', validate=lambda x: x in ['asc', 'desc'])
 
 
 # Utility functions
