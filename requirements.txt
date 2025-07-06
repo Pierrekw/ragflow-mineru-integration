@@ -1,0 +1,83 @@
+# Core dependencies
+flask==2.3.3
+flask-login==0.6.3
+flask-cors==4.0.0
+flask-jwt-extended==4.5.3
+flask-migrate==4.0.5
+flask-sqlalchemy==3.0.5
+flask-restful==0.3.10
+flask-limiter==3.5.0
+marshmallow==3.20.1
+flask-marshmallow==0.15.0
+marshmallow-sqlalchemy==0.29.0
+
+# Database
+peewee==3.16.3
+mysql-connector-python==8.1.0
+redis==4.6.0
+
+# Async support
+aiohttp==3.8.5
+aiofiles==23.2.1
+asyncio-mqtt==0.13.0
+
+# Document processing
+PyPDF2==3.0.1
+python-docx==0.8.11
+openpyxl==3.1.2
+pillow==10.0.0
+
+# Machine Learning
+torch==2.0.1
+torchvision==0.15.2
+transformers==4.33.2
+sentence-transformers==2.2.2
+
+# API and HTTP
+requests==2.31.0
+httpx==0.24.1
+fastapi==0.103.1
+uvicorn==0.23.2
+pydantic==2.3.0
+
+# Utilities
+python-dotenv==1.0.0
+click==8.1.7
+celery==5.3.1
+kombu==5.3.1
+
+# Monitoring and Logging
+prometheus-client==0.17.1
+structlog==23.1.0
+
+# Development tools
+pytest==7.4.2
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+black==23.7.0
+isort==5.12.0
+flake8==6.0.0
+mypy==1.5.1
+
+# Production server
+gunicorn==21.2.0
+gevent==23.7.0
+
+# File handling
+watchdog==3.0.0
+send2trash==1.8.2
+
+# Security
+cryptography==41.0.4
+bcrypt==4.0.1
+PyJWT==2.8.0
+
+# Configuration
+pyyaml==6.0.1
+toml==0.10.2
+configparser==5.3.0
+
+# MinerU specific (will be installed separately)
+# magic-pdf==0.6.2
+# detectron2
+# layoutlmv3

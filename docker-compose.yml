@@ -1,0 +1,306 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: ragflow-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ragflow_mineru
+      MYSQL_USER: ragflow
+      MYSQL_PASSWORD: ragflow123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ragflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: ragflow-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: ragflow-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - ragflow-network
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinerU Service
+  mineru:
+    build:
+      context: ./docker/mineru
+      dockerfile: Dockerfile
+    container_name: ragflow-mineru
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/app
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./models:/app/models
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - redis
+
+  # Ragflow Backend
+  ragflow-backend:
+    build:
+      context: .
+      dockerfile: docker/ragflow/Dockerfile
+    container_name: ragflow-backend
+    environment:
+      - ENVIRONMENT=production
+      - DB_HOST=mysql
+      - DB_USER=ragflow
+      - DB_PASSWORD=ragflow123
+      - DB_NAME=ragflow_mineru
+      - REDIS_URL=redis://redis:6379/0
+      - MINERU_API_URL=http://mineru:8001
+      - MINIO_HOST=minio
+      - MINIO_PORT=9000
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mineru:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/ragflow/Dockerfile
+    container_name: ragflow-celery-worker
+    environment:
+      - ENVIRONMENT=production
+      - DB_HOST=mysql
+      - DB_USER=ragflow
+      - DB_PASSWORD=ragflow123
+      - DB_NAME=ragflow_mineru
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - MINERU_API_URL=http://mineru:8001
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    command: celery -A backend.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      - redis
+      - mysql
+      - mineru
+
+  # Celery Beat (Scheduler)
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/ragflow/Dockerfile
+    container_name: ragflow-celery-beat
+    environment:
+      - ENVIRONMENT=production
+      - DB_HOST=mysql
+      - DB_USER=ragflow
+      - DB_PASSWORD=ragflow123
+      - DB_NAME=ragflow_mineru
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    command: celery -A backend.celery_app beat --loglevel=info
+    depends_on:
+      - redis
+      - mysql
+
+  # Frontend (React)
+  ragflow-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ragflow-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api/v1
+      - REACT_APP_WS_URL=ws://localhost:5000/ws
+    ports:
+      - "3000:3000"
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    depends_on:
+      - ragflow-backend
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ragflow-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./static:/var/www/static
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    depends_on:
+      - ragflow-backend
+      - ragflow-frontend
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ragflow-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ragflow-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - ragflow-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  mysql_data:
+  redis_data:
+  es_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  ragflow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
